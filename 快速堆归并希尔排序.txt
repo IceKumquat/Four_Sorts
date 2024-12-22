@@ -1,0 +1,250 @@
+#pragma once
+#define Sort_H
+// ANSI C++标准库头文件
+#include <cstring>					// 标准串操作
+#include <iostream>					// 标准流操作
+#include <stdlib.h>
+#define numMax 20
+#define StrMAX 100
+#define MAX 10000
+using namespace std;
+
+//快速排序
+template <class T>
+void QuickSort(int left, int right, T* a);
+template <class T>
+int divide(int left, int right, T* a);
+
+//堆排序
+template <class T>
+void HeapSortDown(int length, T* a);
+template <class T>
+void HeapProcess(int length, T* a);
+template <class T>
+int HeapSwap(int p, int length, T* a);
+template <class T>
+T* GetMin(T* a, T* b);
+
+//归并排序
+template <class T>
+void MergeSort(int left, int right, T* a);
+template <class T>
+void deletespace(T* b);
+
+//希尔排序
+template <class T>
+void ShellSort(int length, T* a);
+template <class T>
+void Insert(int d, int length, T* a);
+
+
+template <class T>
+void swap(T* a, T* b);
+
+-----------------------------------------快速排序-----------------------------------------
+template <class T>//快速排序
+void QuickSort(int left, int right, T* a) {//在第一次调用的时候，left为1，right为数组a的长度，索引0空出来
+	if (left <= right) {
+		int location = divide(left, right, a);
+		//递归左区间
+		QuickSort(left, location - 1, a);//其实到这里l和r应该是一样的索引了
+		//递归右区间
+		QuickSort(location + 1, right, a);
+	}
+	else {
+		return;
+	}
+}
+
+template <class T>
+int divide(int left, int right, T* a) {
+	int l = left;//操作点,函数参数的left和right保留下来比较好
+	int r = right;
+	int divide = *(a + left);//取区间的第一个数作为哨兵
+	while (l < r) {
+		while (*(a + r) > divide && l < r) {//从右往左找到一个小于哨兵的值
+			r--;
+		}
+		swap(a + l, a + r);//把找到的值塞到左边的坑里，并给自己挖个坑
+		while (*(a + l) <= divide && l < r) {//从左往右找到一个大于哨兵的值
+			l++;
+		}
+		swap(a + r, a + l);//把找到的值塞到右边的坑里，并给自己挖个坑
+	}
+	*(a + l) = divide;//把哨兵放在空缺的位置上
+	return l;
+}
+
+-----------------------------------------堆排序-----------------------------------------
+template <class T>//堆排序降序
+void HeapSortDown(int length, T* a) {//同样的，数组应该是从索引1开始有数据
+	int n = length;
+	HeapProcess(length, a);//初始最小堆处理，下面是排序
+	/*cout << "初始最小堆生成如下:";
+	for (int i = 1; i <= n; i++) {
+		cout << a[i] << " ";
+	}
+	cout << endl;*///初始最小堆是正确的
+
+	while (length != 1) {
+		swap(a + 1, a + length);
+		length--;
+		HeapSwap(1, length, a);//堆顶和堆底元素交换
+		cout << "排序完成，下面是第" << n - length << "次排序后的数据:";
+		for (int i = 1; i <= n; i++) {
+			cout << a[i] << " ";
+		}
+		cout << endl;//第6次排序的时候，索引1,2,3虽然length=2了(意味着索引3已经被排序不再参与讨论)，但是1*2+1的结果3仍然会
+		//参与HeapSwap()函数的比较，会导致报错，最终修改方法在HeapSwap函数修改一个条件即可
+	}//很神奇，HeapProcess应该是正常工作了，因为后面返回的刚好是初始最小堆的结果，说明这里没有正确的处理
+	//最终确定修改一下
+}
+
+template <class T>
+void HeapProcess(int length, T* a) {//初始最小堆处理,p应为最后一个叶子结点的父亲节点
+	int pnum = length;
+	pnum = pnum / 2;
+	while (pnum != 0) {
+		HeapSwap(pnum, length, a);
+		pnum--;
+	}
+}
+
+template <class T>
+int HeapSwap(int p, int length, T* a) {//p为父亲节点，要考虑他和他的2个叶子结点的关系
+	if (p <= length / 2) {
+		if (a[p * 2 + 1] != '\0' && p * 2 + 1 <= length) {//添加一个条件p * 2 + 1 <= length即可排除已排序好的元素参与排序
+			if (a[p] > a[p * 2] || a[p] > a[p * 2 + 1]) {
+				//cout << "根节点，左子树，右子树分别是:" << a[p] << "," << a[p * 2] << "," << a[p * 2 + 1] << endl;
+				if (a + p * 2 == GetMin(a + p * 2, a + p * 2 + 1)) {
+					swap(a + p, a + p * 2);
+					HeapSwap(p * 2, length, a);//和左子树交换了,往左子树方向继续追查
+				}
+				else {
+					swap(a + p, a + p * 2 + 1);
+					HeapSwap(p * 2 + 1, length, a);//和右子树交换了，往右子树方向继续追查
+				}//让小堆中最小的那个和根节点交换
+			}
+		}
+		else {
+			if (a[p] > a[p * 2]) {
+				swap(a + p * 2 / 2, a + p * 2);
+				HeapSwap(p * 2, length, a);//和左子树交换了,往左子树方向继续追查
+			}
+		}
+	}
+	return 0;//交换结束
+}
+
+template <class T>
+T* GetMin(T* a, T* b) {
+	if (*a > *b) {
+		return b;
+	}
+	else {
+		return a;
+	}//如果2个子树相同，则是返回左子树
+}
+
+
+-----------------------------------------归并排序-----------------------------------------
+template <class T>//归并排序
+void MergeSort(int left, int right, T* a) {//初始left同样为1，而right为长度，a是待排序的数组，b则是辅助数组
+	T* b = new T[right];//辅助数组b，并且只在第一次调用归并算法时创立
+	if (left != right) {
+		int mid = (left + right) / 2;//中间值左偏型
+		MergeSort(left, mid, a);//左半边递归
+		MergeSort(mid + 1, right, a);//右半边递归
+		int i = left;
+		int j = mid + 1;
+		int k = left;//用于b数组的索引
+		while (i <= mid && j <= right) {
+			if (a[i] < a[j]) {
+				b[k] = a[i];
+				i++;
+			}
+			else {
+				b[k] = a[j];
+				j++;
+			}
+			k++;
+		}
+		if (i > mid) {
+			while (j <= right) {
+				b[k] = a[j];
+				j++;
+				k++;
+			}
+		}
+		if (j > right) {
+			while (i <= mid) {
+				b[k] = a[i];
+				i++;
+				k++;
+			}
+		}//上面这一段就是2个数组的归并，但是感觉应该可以写的更简单
+		cout << "递归区间为[" << left << "," << right << "],其中排序后的数据为：";
+		for (int m = left; m <= right; m++) {
+			cout << b[m] << " ";
+			a[m] = b[m];
+		}
+		cout<<endl;
+	}
+	else {
+		deletespace(b);
+		return;
+	}
+	//需要写一个函数用于释放辅助数组b
+}
+
+template <class T>
+void deletespace(T* b) {
+	if (b != nullptr) {
+		delete[]b;
+		b = nullptr;
+	}
+}
+
+
+-----------------------------------------希尔排序-----------------------------------------
+template <class T>//希尔排序
+void ShellSort(int length, T* a) {//希尔排序是基于插入排序改进而来，不断缩小插入步长来为最后一次插入排序做铺垫
+	int d = length / 2;//插入步长
+	while (d != 0) {
+		Insert(d, length, a);
+		d = d / 2;
+	}
+}
+
+template <class T>
+void Insert(int d, int length, T* a) {
+	int temp;
+	int turn = length / d;//一组数有几个
+	int m;
+	for (int i = 1; i <= d; i++) {//d步长即为要一次步长中排序的组数
+		for (int j = 0; j < turn; j++) {//第j+1个数的插入情况
+			m = j;
+			temp = a[i + j * d];//第j+1个要插入的数字
+			for (int k = j; k >= 0; k--) {
+				if (a[i + (k - 1) * d] > temp) {
+					a[i + k * d] = a[i + (k - 1) * d];
+				}
+				else {
+					m = k;
+					break;
+				}
+			}
+			if (m != j) {
+				cout << "第" << i + j * d << "个数插入到了" << i + m * d << "的位置上" << endl;
+				a[i + m * d] = temp;
+			}
+		}
+	}
+}
+
+template <class T>
+void swap(T* a, T* b) {
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
